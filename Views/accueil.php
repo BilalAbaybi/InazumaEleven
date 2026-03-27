@@ -3,92 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Football Frontier — Le Nouveau de Raimon</title>
+    <title>Football Frontier</title>
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="public/css/style.css">
 </head>
-<body>
+<body class="accueil-body">
 
-<div class="bg-field"></div>
-<div class="bg-lines"></div>
+<!-- Fond image avec overlay -->
+<div class="accueil-bg-img"></div>
+<div class="accueil-overlay"></div>
 
 <div class="accueil-wrapper">
 
-    <div class="badge-tournoi">
-        <span class="badge-dot"></span>
-        Tournoi en cours
-    </div>
+    <!-- Logo -->
+    <img src="public/img/logo.webp" alt="Football Frontier" class="accueil-logo">
 
-    <div class="titre-bloc">
-        <div class="titre-sub">Football Frontier</div>
-        <div class="titre-main">Le Nouveau<br>de <span>Raimon</span></div>
-    </div>
+    <!-- Carte principale -->
+    <div class="accueil-carte">
 
-    <div class="carte-accueil">
-
-        <?php if (!empty($_SESSION['erreur'])): ?>
-            <div class="erreur"><?= htmlspecialchars($_SESSION['erreur']) ?></div>
-            <?php unset($_SESSION['erreur']); ?>
-        <?php endif; ?>
-
-        <div class="sep">
-            <div class="sep-line"></div>
-            <div class="sep-icon">⚽</div>
-            <div class="sep-line"></div>
-        </div>
-
-        <p class="intro-texte">
-            Tu es <strong>transféré au lycée Raimon</strong> en plein milieu du
-            Football Frontier. Mark Evans a besoin d'un joueur.
-            <br><br>
+        <!-- Texte d'intro -->
+        <p class="accueil-intro">
+            Tu es <strong>transféré au lycée Raimon</strong> en plein milieu du Football Frontier.
+            Mark Evans a besoin d'un joueur.<br><br>
             Tes choix détermineront si tu deviendras un champion… ou si tu rentreras chez toi la tête basse.
         </p>
 
-        <div class="stats-depart">
-            <div class="stat-item">
-                <div class="stat-label">Courage</div>
-                <div class="stat-jauge">
-                    <div class="stat-pip on-courage"></div>
-                    <div class="stat-pip off"></div>
-                    <div class="stat-pip off"></div>
+        <!-- Séparateur -->
+        <div class="accueil-sep"></div>
+
+        <!-- Stats de départ -->
+        <div class="stats-depart-ie">
+            <div class="stat-ie">
+                <span class="stat-ie-nom">Courage</span>
+                <div class="stat-ie-barre">
+                    <div class="stat-ie-remplissage courage" style="width:33%"></div>
                 </div>
+                <span class="stat-ie-val">1/3</span>
             </div>
-            <div class="stat-item">
-                <div class="stat-label">Technique</div>
-                <div class="stat-jauge">
-                    <div class="stat-pip on-technique"></div>
-                    <div class="stat-pip off"></div>
-                    <div class="stat-pip off"></div>
+            <div class="stat-ie">
+                <span class="stat-ie-nom">Technique</span>
+                <div class="stat-ie-barre">
+                    <div class="stat-ie-remplissage technique" style="width:33%"></div>
                 </div>
+                <span class="stat-ie-val">1/3</span>
             </div>
-            <div class="stat-item">
-                <div class="stat-label">Stamina</div>
-                <div class="stat-jauge">
-                    <div class="stat-pip on-stamina"></div>
-                    <div class="stat-pip on-stamina"></div>
-                    <div class="stat-pip off"></div>
+            <div class="stat-ie">
+                <span class="stat-ie-nom">Stamina</span>
+                <div class="stat-ie-barre">
+                    <div class="stat-ie-remplissage stamina" style="width:66%"></div>
                 </div>
+                <span class="stat-ie-val">2/3</span>
             </div>
         </div>
 
+        <!-- Séparateur -->
+        <div class="accueil-sep"></div>
+
+        <!-- Formulaire -->
+        <?php if (!empty($_SESSION['erreur'])): ?>
+            <p class="erreur"><?= htmlspecialchars($_SESSION['erreur']) ?></p>
+            <?php unset($_SESSION['erreur']); ?>
+        <?php endif; ?>
+
         <form method="POST" action="index.php?action=nouvellePartie">
-            <label class="form-label" for="pseudo">Ton nom de joueur</label>
-            <input
-                class="input-pseudo"
-                type="text"
-                id="pseudo"
-                name="pseudo"
-                placeholder="Ex : Lucas, Enzo, Ryu..."
-                maxlength="50"
-                required
-                autofocus
-            >
-            <button class="btn-jouer" type="submit">⚽ Commencer l'aventure</button>
+            <label class="form-label">Ton nom de joueur</label>
+            <input class="ie-input" type="text" name="pseudo"
+                   placeholder="Ex : Lucas, Enzo, Ryu..."
+                   maxlength="50" required autofocus>
+            <button class="ie-btn-active" type="submit">
+                ⚽ COMMENCER L'AVENTURE
+            </button>
         </form>
 
     </div>
 
-    <p class="footer-note">
+    <!-- Footer -->
+    <p class="accueil-footer">
         Projet BTS SIO — Lycée Fulbert &nbsp;·&nbsp; Histoire dont vous êtes le héros
     </p>
 

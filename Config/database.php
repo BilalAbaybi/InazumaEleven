@@ -5,7 +5,7 @@
 define('Hostname', '192.168.56.10' );
 define('Port', '3306' );
 define('Database', 'football_frontier' );
-define('Username', 'AdminVM' );
+define('Username', 'Admin' );
 define('Password', 'Bilal.aba@28000' );
 
 function getDB(): PDO {

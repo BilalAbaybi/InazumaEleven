@@ -1118,3 +1118,318 @@ body {
         padding: 24px 20px;
     }
 }
+
+
+/* ============================================================
+   ACCUEIL STYLE INAZUMA ELEVEN — VERSION MODERNE
+   ============================================================ */
+
+body.accueil-body {
+    background: #0a1a3a;
+    overflow: hidden;
+    height: 100vh;
+}
+
+
+/* Fond : image de la page d'accueil */
+
+.accueil-bg-img {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: url('../../public/img/pageacceuil.jpg') center center / cover no-repeat;
+}
+
+
+/* Overlay sombre par-dessus l'image */
+
+.accueil-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient( 160deg, rgba(5, 10, 30, 0.75) 0%, rgba(5, 10, 30, 0.55) 50%, rgba(5, 10, 30, 0.80) 100%);
+}
+
+
+/* Wrapper général */
+
+.accueil-wrapper {
+    position: relative;
+    z-index: 2;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    gap: 16px;
+}
+
+
+/* Logo */
+
+.accueil-logo {
+    max-width: 300px;
+    width: 75%;
+    filter: drop-shadow(0 4px 24px rgba(0, 150, 255, 0.6));
+    animation: fadeDown 0.6s ease both;
+}
+
+
+/* Carte centrale */
+
+.accueil-carte {
+    background: rgba(8, 16, 40, 0.82);
+    border: 1px solid rgba(100, 160, 255, 0.25);
+    border-radius: 16px;
+    padding: 28px 32px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    animation: fadeUp 0.6s ease 0.1s both;
+}
+
+
+/* Séparateur */
+
+.accueil-sep {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(100, 160, 255, 0.3), transparent);
+    margin: 16px 0;
+}
+
+
+/* Texte intro */
+
+.accueil-intro {
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: #a8c4e8;
+    text-align: center;
+}
+
+.accueil-intro strong {
+    color: #ffffff;
+}
+
+
+/* --- Barres de stats --- */
+
+.stats-depart-ie {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.stat-ie {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stat-ie-nom {
+    font-size: 0.68rem;
+    font-weight: 900;
+    color: #6a9fd4;
+    width: 68px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    flex-shrink: 0;
+}
+
+.stat-ie-barre {
+    flex: 1;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(100, 160, 255, 0.2);
+    border-radius: 100px;
+    overflow: hidden;
+}
+
+.stat-ie-remplissage {
+    height: 100%;
+    border-radius: 100px;
+    transition: width 0.6s ease;
+}
+
+.stat-ie-remplissage.courage {
+    background: linear-gradient(90deg, #cc4400, #ff6b00);
+    box-shadow: 0 0 6px rgba(255, 107, 0, 0.5);
+}
+
+.stat-ie-remplissage.technique {
+    background: linear-gradient(90deg, #0044cc, #4da6ff);
+    box-shadow: 0 0 6px rgba(77, 166, 255, 0.5);
+}
+
+.stat-ie-remplissage.stamina {
+    background: linear-gradient(90deg, #007700, #2ecc71);
+    box-shadow: 0 0 6px rgba(46, 204, 113, 0.5);
+}
+
+.stat-ie-val {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #6a9fd4;
+    width: 26px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+
+/* --- Formulaire --- */
+
+.form-label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #6a9fd4;
+    margin-bottom: 8px;
+}
+
+.ie-input {
+    width: 100%;
+    background: rgba(0, 10, 30, 0.6);
+    border: 1px solid rgba(100, 160, 255, 0.35);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: #fff;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    outline: none;
+    margin-bottom: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ie-input::placeholder {
+    color: rgba(100, 160, 255, 0.4);
+    font-weight: 400;
+}
+
+.ie-input:focus {
+    border-color: rgba(232, 160, 32, 0.7);
+    box-shadow: 0 0 0 3px rgba(232, 160, 32, 0.12);
+}
+
+
+/* Bouton principal — gros, orange, style IE */
+
+.ie-btn-active {
+    width: 100%;
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #e8600a, #ff8c00);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-family: 'Bangers', cursive;
+    font-size: 1.3rem;
+    letter-spacing: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 6px 20px rgba(232, 100, 10, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.ie-btn-active:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(232, 100, 10, 0.65);
+}
+
+.ie-btn-active:active {
+    transform: translateY(0);
+}
+
+
+/* Footer */
+
+.accueil-footer {
+    position: absolute;
+    bottom: 16px;
+    font-size: 0.68rem;
+    color: rgba(100, 140, 200, 0.45);
+    text-align: center;
+    letter-spacing: 1px;
+    z-index: 2;
+}
+
+
+/* Erreur */
+
+.erreur {
+    background: rgba(231, 76, 60, 0.15);
+    border: 1px solid rgba(231, 76, 60, 0.4);
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: #ff7c6e;
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+
+/* ============================================================
+   FOND IMAGE PAGE DE JEU
+   ============================================================ */
+
+
+/* Image de fond plein écran fixe */
+
+.page-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+
+/* Overlay sombre pour lisibilité */
+
+.page-bg-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient( 160deg, rgba(5, 10, 25, 0.72) 0%, rgba(5, 10, 25, 0.60) 50%, rgba(5, 10, 25, 0.78) 100%);
+}
+
+
+/* Tout le layout passe au-dessus du fond */
+
+.layout {
+    position: relative;
+    z-index: 2;
+}
+
+
+/* Sidebar semi-transparente pour voir le fond */
+
+.sidebar {
+    background: rgba(13, 17, 30, 0.75);
+    backdrop-filter: blur(10px);
+}
+
+
+/* Topbar semi-transparente */
+
+.topbar {
+    background: rgba(8, 12, 25, 0.88);
+    backdrop-filter: blur(10px);
+}
+
+
+/* Cartes semi-transparentes */
+
+.carte-texte,
+.carte-choix {
+    background: rgba(16, 22, 38, 0.82);
+    backdrop-filter: blur(8px);
+}
