@@ -1,68 +1,140 @@
 <?php
+// controllers/GameController.php
 
-require_once '../InazumaEleven/Models/Partie.php';
-require_once '../InazumaEleven/Models/Stats.php';
+require_once('Models/Partie.php');
+require_once('Models/Stats.php');
+require_once('Models/Page.php');
+require_once('Models/Inventaire.php');
+require_once('Models/Historique.php');
+require_once('Models/Joueur.php');
+require_once('Models/Affinite.php');
+require_once('Models/Journal.php');
+require_once('Models/MatchSimule.php');
 
 class GameController {
 
-    /**
-     * Affiche le formulaire d'accueil (saisie du pseudo + intro)
-     * GET /index.php?action=accueil
-     */
     public static function accueil(): void {
-        require '../InazumaEleven/Views/accueil.php';
+        require 'Views/accueil.php';
     }
 
-    /**
-     * Crée une nouvelle partie et redirige vers la page 1
-     * POST /index.php?action=nouvellePartie
-     */
     public static function nouvellePartie(): void {
-        // Validation du pseudo
-        $pseudo = trim($_POST['pseudo'] ?? '');
+        $pseudo     = trim($_POST['pseudo']       ?? '');
+        $motDePasse = trim($_POST['mot_de_passe'] ?? '');
 
         if ($pseudo === '' || strlen($pseudo) > 50) {
-            $_SESSION['erreur'] = 'Merci d\'entrer un pseudo valide (1-50 caractères).';
-            header('Location: index.php?action=accueil');
-            exit;
+            $_SESSION['erreur'] = 'Pseudo invalide (1-50 caractères).';
+            header('Location: index.php?action=accueil'); exit;
+        }
+        if (strlen($motDePasse) < 4) {
+            $_SESSION['erreur'] = 'Mot de passe trop court (4 caractères minimum).';
+            header('Location: index.php?action=accueil'); exit;
         }
 
-        // Création de la partie en BDD
-        $idPartie = Partie::creer($pseudo);
+        $idJoueur = Joueur::creer($pseudo, $motDePasse);
+        if ($idJoueur === false) {
+            $_SESSION['erreur'] = 'Ce pseudo est déjà utilisé. Connecte-toi ou choisis un autre pseudo.';
+            header('Location: index.php?action=accueil'); exit;
+        }
 
-        // Création des stats de départ (courage=1, technique=1, stamina=2)
+        $idPartie = Partie::creer($pseudo, $idJoueur);
         Stats::creer($idPartie);
 
-        // On stocke l'id de partie en session
         $_SESSION['id_partie'] = $idPartie;
+        $_SESSION['id_joueur'] = $idJoueur;
         $_SESSION['pseudo']    = $pseudo;
 
-        // Redirection vers la page 1
-        header('Location: index.php?action=page&id=1');
-        exit;
+        // Nettoyer toute trace de matchs précédents
+        unset($_SESSION['match_fin'], $_SESSION['event_aleatoire'], $_SESSION['objet_notif'],
+              $_SESSION['match_resultat_action'], $_SESSION['niveau_up'], $_SESSION['succes']);
+
+        header('Location: index.php?action=page&id=1'); exit;
     }
 
-    /**
-     * Affiche la page de fin avec les stats de la partie
-     * GET /index.php?action=fin
-     */
-    public static function fin(): void {
-        $idPartie = $_SESSION['id_partie'] ?? null;
+    public static function continuer(): void {
+        $pseudo     = trim($_POST['pseudo']       ?? '');
+        $motDePasse = trim($_POST['mot_de_passe'] ?? '');
 
-        if (!$idPartie) {
-            header('Location: index.php?action=accueil');
-            exit;
+        $joueur = Joueur::connecter($pseudo, $motDePasse);
+        if (!$joueur) {
+            $_SESSION['erreur'] = 'Pseudo ou mot de passe incorrect.';
+            header('Location: index.php?action=accueil'); exit;
         }
 
-        require_once '../InazumaEleven/Models/Stats.php';
-        require_once '../InazumaEleven/Models/Inventaire.php';
-        require_once '../InazumaEleven/Models/Historique.php';
+        $partie = Joueur::getPartiEnCours((int)$joueur['id_joueur']);
 
-        $partie    = Partie::getById($idPartie);
-        $stats     = Stats::getByPartie($idPartie);
+        $_SESSION['id_joueur'] = (int)$joueur['id_joueur'];
+        $_SESSION['pseudo']    = $joueur['pseudo'];
+
+        if (!$partie) {
+            $idPartie = Partie::creer($joueur['pseudo'], (int)$joueur['id_joueur']);
+            Stats::creer($idPartie);
+            $_SESSION['id_partie'] = $idPartie;
+            header('Location: index.php?action=page&id=1'); exit;
+        }
+
+        $_SESSION['id_partie'] = (int)$partie['id_partie'];
+        header('Location: index.php?action=page&id=' . (int)$partie['page_actuelle']); exit;
+    }
+
+    public static function sauvegarder(): void {
+        $idPartie = $_SESSION['id_partie'] ?? null;
+        if (!$idPartie) { header('Location: index.php?action=accueil'); exit; }
+
+        $partie = Partie::getById($idPartie);
+        $_SESSION['succes'] = 'Partie sauvegardée à la page ' . $partie['page_actuelle'] . ' !';
+        header('Location: index.php?action=page&id=' . $partie['page_actuelle']); exit;
+    }
+
+    public static function recommencer(): void {
+        $idJoueur = $_SESSION['id_joueur'] ?? null;
+        $pseudo   = $_SESSION['pseudo']    ?? null;
+        if (!$idJoueur || !$pseudo) { header('Location: index.php?action=accueil'); exit; }
+
+        $anciennePartie = Joueur::getPartiEnCours((int)$idJoueur);
+        if ($anciennePartie) {
+            Partie::terminer((int)$anciennePartie['id_partie'], 'abandonnee');
+        }
+
+        $idPartie = Partie::creer($pseudo, (int)$idJoueur);
+        Stats::creer($idPartie);
+        $_SESSION['id_partie'] = $idPartie;
+
+        // Nettoyer toute trace de matchs précédents
+        unset($_SESSION['match_fin'], $_SESSION['event_aleatoire'], $_SESSION['objet_notif'],
+              $_SESSION['match_resultat_action'], $_SESSION['niveau_up'], $_SESSION['succes']);
+
+        header('Location: index.php?action=page&id=1'); exit;
+    }
+
+    public static function fin(): void {
+        $idPartie = $_SESSION['id_partie'] ?? null;
+        if (!$idPartie) { header('Location: index.php?action=accueil'); exit; }
+
+        $partie     = Partie::getById($idPartie);
+        $stats      = Stats::getByPartie($idPartie);
         $inventaire = Inventaire::getByPartie($idPartie);
         $historique = Historique::getByPartie($idPartie);
+        $affinites  = Affinite::getAll($idPartie);
+        $journal    = Journal::getByPartie($idPartie);
+        $matchs     = MatchSimule::getHistorique($idPartie);
 
-        require '../InazumaEleven/Views/fin.php';
+        $imgFin = null;
+        if ($partie) {
+            $pageFin = Page::getById((int)$partie['page_actuelle']);
+            if ($pageFin && !empty($pageFin['image'])) {
+                $imgFin = $pageFin['image'];
+            }
+        }
+
+        require 'Views/fin.php';
+    }
+
+    public static function journal(): void {
+        $idPartie = $_SESSION['id_partie'] ?? null;
+        if (!$idPartie) { header('Location: index.php?action=accueil'); exit; }
+
+        $journal = Journal::getByPartie($idPartie);
+        $stats   = Stats::getByPartie($idPartie);
+        require 'Views/journal.php';
     }
 }

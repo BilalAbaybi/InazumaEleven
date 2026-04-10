@@ -1,6 +1,6 @@
 <?php
  
-require_once '../InazumaEleven/Config/database.php';
+require_once('Config/database.php');
  
 class Page {
  
@@ -23,4 +23,3 @@ class Page {
         return $page && (bool)$page['est_fin'];
     }
 }
- 

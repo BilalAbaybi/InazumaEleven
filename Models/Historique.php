@@ -1,7 +1,7 @@
 <?php
 // models/Historique.php
 
-require_once '../InazumaEleven/Config/database.php';
+require_once('Config/database.php');
 
 class Historique {
 

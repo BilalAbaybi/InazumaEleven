@@ -1,12 +1,13 @@
 <?php
+// models/Choix.php
 
-require_once '../InazumaEleven/Config/database.php';
-require_once '../InazumaEleven/Models/Stats.php';
-require_once '../InazumaEleven/Models/Inventaire.php';
+require_once('Config/database.php');
+require_once('Models/Stats.php');
+require_once('Models/Inventaire.php');
+require_once('Models/Affinite.php');
 
 class Choix {
 
-    // Récupère un choix par son id
     public static function getById(int $id): array|false {
         $pdo  = getDB();
         $stmt = $pdo->prepare('SELECT * FROM choix WHERE id_choix = :id');
@@ -14,45 +15,56 @@ class Choix {
         return $stmt->fetch();
     }
 
-    // Récupère TOUS les choix d'une page source
     public static function getByPage(int $idPage): array {
         $pdo  = getDB();
-        $stmt = $pdo->prepare(
-            'SELECT * FROM choix WHERE id_page_source = :id'
-        );
+        $stmt = $pdo->prepare('SELECT * FROM choix WHERE id_page_source = :id');
         $stmt->execute([':id' => $idPage]);
         return $stmt->fetchAll();
     }
 
-    // Récupère uniquement les choix disponibles pour le joueur
-    // (filtre selon ses stats et son inventaire)
+    // Récupère les choix disponibles selon toutes les conditions v2
     public static function getDisponibles(int $idPage, int $idPartie): array {
-        $tousLesChoix = self::getByPage($idPage);
-        $choixDispo   = [];
+        $tousLesChoix  = self::getByPage($idPage);
+        $choixDispo    = [];
+        $textesDejaVus = [];
 
         foreach ($tousLesChoix as $choix) {
-            // Vérification des stats minimales
+            // Vérification stats complètes v2
             $statsOk = Stats::verifieCondition(
                 $idPartie,
                 (int)$choix['cond_courage_min'],
                 (int)$choix['cond_technique_min'],
-                (int)$choix['cond_stamina_min']
+                (int)$choix['cond_stamina_min'],
+                (int)$choix['cond_vitesse_min'],
+                (int)$choix['cond_chance_min'],
+                (int)$choix['cond_leadership_min']
             );
 
-            // Vérification de l'objet requis (si applicable)
+            // Vérification objet requis
             $objetOk = true;
             if (!empty($choix['cond_objet_requis'])) {
-                $objetOk = Inventaire::possede(
+                $objetOk = Inventaire::possede($idPartie, (int)$choix['cond_objet_requis']);
+            }
+
+            // Vérification affinité requise
+            $affiniteOk = true;
+            if (!empty($choix['cond_affinite_perso'])) {
+                $affiniteOk = Affinite::verifieCondition(
                     $idPartie,
-                    (int)$choix['cond_objet_requis']
+                    (int)$choix['cond_affinite_perso'],
+                    (int)$choix['cond_affinite_min']
                 );
             }
 
-            if ($statsOk && $objetOk) {
-                $choixDispo[] = $choix;
+            if ($statsOk && $objetOk && $affiniteOk) {
+                // Anti-doublon par texte + destination
+                $cle = $choix['texte_bouton'] . '|' . $choix['id_page_cible'];
+                if (!in_array($cle, $textesDejaVus)) {
+                    $textesDejaVus[] = $cle;
+                    $choixDispo[]    = $choix;
+                }
             }
         }
-
         return $choixDispo;
     }
 }

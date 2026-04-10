@@ -1,130 +1,187 @@
 <?php
+// controllers/ChoixController.php
 
-require_once '../InazumaEleven/Models/Choix.php';
-require_once '../InazumaEleven/Models/Partie.php';
-require_once '../InazumaEleven/Models/Stats.php';
-require_once '../InazumaEleven/Models/Inventaire.php';
-require_once '../InazumaEleven/Models/Objet.php';
-require_once '../InazumaEleven/Models/Historique.php';
-require_once '../InazumaEleven/Models/Page.php';
+require_once('Models/Choix.php');
+require_once('Models/Partie.php');
+require_once('Models/Stats.php');
+require_once('Models/Inventaire.php');
+require_once('Models/Objet.php');
+require_once('Models/Historique.php');
+require_once('Models/Page.php');
+require_once('Models/Affinite.php');
+require_once('Models/Journal.php');
 
 class ChoixController {
 
-    /**
-     * Traite le choix sélectionné par le joueur
-     * POST /index.php?action=choisir
-     */
     public static function traiter(): void {
-        // Vérification de session
         $idPartie = $_SESSION['id_partie'] ?? null;
+        if (!$idPartie) { header('Location: index.php?action=accueil'); exit; }
 
-        if (!$idPartie) {
-            header('Location: index.php?action=accueil');
-            exit;
-        }
-
-        // Récupération du choix soumis via POST
         $idChoix = (int)($_POST['id_choix'] ?? 0);
+        if ($idChoix === 0) { header('Location: index.php?action=accueil'); exit; }
 
-        if ($idChoix === 0) {
-            header('Location: index.php?action=accueil');
-            exit;
-        }
-
-        // Récupération du choix en BDD
         $choix = Choix::getById($idChoix);
-        if (!$choix) {
-            header('Location: index.php?action=accueil');
-            exit;
-        }
+        if (!$choix) { header('Location: index.php?action=accueil'); exit; }
 
-        // Vérification que ce choix correspond bien à la page actuelle du joueur
-        // (sécurité anti-triche : on ne peut pas soumettre un choix d'une autre page)
         $partie = Partie::getById($idPartie);
         if (!$partie || (int)$partie['page_actuelle'] !== (int)$choix['id_page_source']) {
-            header('Location: index.php?action=page&id=' . ($partie['page_actuelle'] ?? 1));
-            exit;
+            header('Location: index.php?action=page&id=' . ($partie['page_actuelle'] ?? 1)); exit;
         }
 
-        // Vérification que le joueur remplit les conditions du choix
         $statsOk = Stats::verifieCondition(
             $idPartie,
             (int)$choix['cond_courage_min'],
             (int)$choix['cond_technique_min'],
-            (int)$choix['cond_stamina_min']
+            (int)$choix['cond_stamina_min'],
+            (int)$choix['cond_vitesse_min'],
+            (int)$choix['cond_chance_min'],
+            (int)$choix['cond_leadership_min']
         );
-
         $objetOk = true;
         if (!empty($choix['cond_objet_requis'])) {
             $objetOk = Inventaire::possede($idPartie, (int)$choix['cond_objet_requis']);
         }
-
-        if (!$statsOk || !$objetOk) {
-            // Le joueur ne remplit pas les conditions (triche ou bug) : on ne fait rien
-            header('Location: index.php?action=page&id=' . $partie['page_actuelle']);
-            exit;
+        $affiniteOk = true;
+        if (!empty($choix['cond_affinite_perso'])) {
+            $affiniteOk = Affinite::verifieCondition(
+                $idPartie,
+                (int)$choix['cond_affinite_perso'],
+                (int)$choix['cond_affinite_min']
+            );
         }
 
-        // --- Effets spéciaux selon la page cible ---
-        // Ces effets sont déclenchés APRÈS la validation du choix
+        if (!$statsOk || !$objetOk || !$affiniteOk) {
+            header('Location: index.php?action=page&id=' . $partie['page_actuelle']); exit;
+        }
+
         $idPageCible = (int)$choix['id_page_cible'];
+
         self::appliquerEffetsPage($idPartie, (int)$choix['id_page_source'], $idPageCible);
 
-        // Enregistrement du choix dans l'historique
         Historique::enregistrer($idPartie, $idChoix);
 
-        // Mise à jour de la page actuelle en BDD
-        Partie::majPage($idPartie, $idPageCible);
+        $pageCibleData = Page::getById($idPageCible);
+        $estFin        = $pageCibleData && (bool)$pageCibleData['est_fin'];
 
-        // Redirection vers la nouvelle page
-        header('Location: index.php?action=page&id=' . $idPageCible);
-        exit;
+        Stats::ajouterXP($idPartie, 10);
+        Partie::majPage($idPartie, $idPageCible, $estFin);
+
+        header('Location: index.php?action=page&id=' . $idPageCible); exit;
     }
 
-    /**
-     * Applique les effets de stats et d'inventaire selon les choix de l'histoire.
-     * Cette méthode centralise toute la logique narrative :
-     *   - Ramasser un objet donne des stats
-     *   - Certains chemins coûtent de la stamina
-     */
+    public static function repondreDialogue(): void {
+        $idPartie = $_SESSION['id_partie'] ?? null;
+        if (!$idPartie) { header('Location: index.php?action=accueil'); exit; }
+
+        $idReponse = (int)($_POST['id_reponse'] ?? 0);
+        if ($idReponse === 0) { header('Location: index.php?action=accueil'); exit; }
+
+        require_once('Models/Dialogue.php');
+        
+        $reponse = Dialogue::getReponseById($idReponse);
+        if (!$reponse) { header('Location: index.php?action=accueil'); exit; }
+
+        Dialogue::appliquerEffetsReponse($reponse, $idPartie);
+
+        Stats::ajouterXP($idPartie, 5);
+
+        $idPageSuivante = (int)($reponse['id_page_suivante'] ?? 0);
+        if ($idPageSuivante === 0) {
+            header('Location: index.php?action=accueil'); exit;
+        }
+
+        $pageSuivante = Page::getById($idPageSuivante);
+        $estFin       = $pageSuivante && (bool)$pageSuivante['est_fin'];
+
+        Partie::majPage($idPartie, $idPageSuivante, $estFin);
+        header('Location: index.php?action=page&id=' . $idPageSuivante); exit;
+    }
+
+    // Effets narratifs — ne s'appliquent que si la page cible n'a pas encore été visitée
     private static function appliquerEffetsPage(int $idPartie, int $pageSource, int $pageCible): void {
-        // Page 3A → 4A (prendre le bandeau) : +1 courage via objet bandeau (id=1)
-        if ($pageSource === 3 && $pageCible === 5) {
-            Inventaire::ajouter($idPartie, 1); // bandeau de Mark
-            Objet::appliquerEffets(1, $idPartie);
+
+        if (Journal::pageDejaVisitee($idPartie, $pageCible)) {
+            return;
         }
 
-        // Page 3A → 4B (prendre les crampons) : +1 technique via objet crampons (id=2)
-        if ($pageSource === 3 && $pageCible === 6) {
-            Inventaire::ajouter($idPartie, 2); // crampons d'Axel
-            Objet::appliquerEffets(2, $idPartie);
+        // Objets selon le chemin de préparation
+        if ($pageSource === 11 && $pageCible === 12) {
+            // Mark → Gants de Mark (objet 6)
+            if (!Inventaire::possede($idPartie, 6)) {
+                Inventaire::ajouter($idPartie, 6);
+                Objet::appliquerEffets(6, $idPartie);
+                $_SESSION['objet_notif'] = 6;
+            }
+            Affinite::modifier($idPartie, 1, 15);
+        }
+        if ($pageSource === 11 && $pageCible === 13) {
+            // Jude → Carnet de Jude (objet 3)
+            if (!Inventaire::possede($idPartie, 3)) {
+                Inventaire::ajouter($idPartie, 3);
+                Objet::appliquerEffets(3, $idPartie);
+                $_SESSION['objet_notif'] = 3;
+            }
+            Affinite::modifier($idPartie, 3, 15);
+        }
+        if ($pageSource === 11 && $pageCible === 14) {
+            // Nathan → Bracelet Nathan (objet 7)
+            if (!Inventaire::possede($idPartie, 7)) {
+                Inventaire::ajouter($idPartie, 7);
+                Objet::appliquerEffets(7, $idPartie);
+                $_SESSION['objet_notif'] = 7;
+            }
+            Affinite::modifier($idPartie, 4, 15);
+        }
+        if ($pageSource === 11 && $pageCible === 15) {
+            // Solo → Stamina +1
+            Stats::modifier($idPartie, 'stamina', 1);
+            Affinite::modifier($idPartie, 5, 10);
         }
 
-        // Page 3B → 4C (prendre le carnet) : +1 technique via objet carnet (id=3)
-        if ($pageSource === 4 && $pageCible === 7) {
-            Inventaire::ajouter($idPartie, 3); // carnet de Jude Sharp
-            Objet::appliquerEffets(3, $idPartie);
-        }
+        // Affinités selon rencontre personnage
+        if ($pageSource === 4 && $pageCible === 5)  Affinite::modifier($idPartie, 2, 5);
+        if ($pageSource === 4 && $pageCible === 6)  Affinite::modifier($idPartie, 3, 5);
+        if ($pageSource === 4 && $pageCible === 7)  Affinite::modifier($idPartie, 4, 5);
+        if ($pageSource === 4 && $pageCible === 8)  Affinite::modifier($idPartie, 5, 5);
 
-        // Page 3B (solo) : stamina -1
-        if ($pageSource === 2 && $pageCible === 4) {
-            Stats::modifier($idPartie, 'stamina', -1);
-        }
-
-        // Page 4D (rien pris) : stamina -1 supplémentaire
-        if ($pageSource === 4 && $pageCible === 8) {
-            Stats::modifier($idPartie, 'stamina', -1);
-        }
-
-        // Page 6B (jeu collectif) : +1 courage
-        if ($pageSource === 9 && $pageCible === 12) {
+        // Après match entraînement → Courage +1
+        if ($pageSource === 10 && $pageCible === 11) {
             Stats::modifier($idPartie, 'courage', 1);
         }
 
-        // Page 6A sans crampons (rebond Kevin) : stamina -1
-        // Page 6C (sacrifice) : stamina -1
-        if ($pageSource === 9 && $pageCible === 13) {
-            Stats::modifier($idPartie, 'stamina', -1);
+        // Après défaite → bandeau Mark si affinité suffisante
+        if ($pageSource === 18 && $pageCible === 19) {
+            if (!Inventaire::possede($idPartie, 1)) {
+                $affMark = Affinite::get($idPartie, 1);
+                if ($affMark && (int)$affMark['valeur'] >= 40) {
+                    Inventaire::ajouter($idPartie, 1);
+                    Objet::appliquerEffets(1, $idPartie);
+                    $_SESSION['objet_notif'] = 1;
+                }
+            }
+        }
+
+        // Victoire finale Kantō → Boisson isotonique
+        if ($pageSource === 30 && $pageCible === 31) {
+            if (!Inventaire::possede($idPartie, 4)) {
+                Inventaire::ajouter($idPartie, 4);
+                Objet::appliquerEffets(4, $idPartie);
+                $_SESSION['objet_notif'] = 4;
+            }
+            Affinite::modifier($idPartie, 1, 10);
+            Affinite::modifier($idPartie, 2, 10);
+        }
+
+        // Victoire Kirkwood → Talisman de Raimon
+        if ($pageSource === 40 && $pageCible === 41) {
+            if (!Inventaire::possede($idPartie, 5)) {
+                Inventaire::ajouter($idPartie, 5);
+                Objet::appliquerEffets(5, $idPartie);
+                $_SESSION['objet_notif'] = 5;
+            }
+            for ($i = 1; $i <= 5; $i++) {
+                Affinite::modifier($idPartie, $i, 8);
+            }
         }
     }
 }

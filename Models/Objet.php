@@ -1,10 +1,10 @@
 <?php
+// models/Objet.php
 
-require_once '../InazumaEleven/Config/database.php';
+require_once('Config/database.php');
 
 class Objet {
 
-    // Récupère un objet par son id
     public static function getById(int $id): array|false {
         $pdo  = getDB();
         $stmt = $pdo->prepare('SELECT * FROM objet WHERE id_objet = :id');
@@ -12,30 +12,29 @@ class Objet {
         return $stmt->fetch();
     }
 
-    // Récupère tous les objets (utile pour l'admin ou debug)
     public static function getAll(): array {
         $pdo  = getDB();
-        $stmt = $pdo->query('SELECT * FROM objet');
-        return $stmt->fetchAll();
+        return $pdo->query('SELECT * FROM objet')->fetchAll();
     }
 
-    // Applique les effets d'un objet sur les stats du joueur
-    // appelé automatiquement quand le joueur ramasse un objet
+    // Applique tous les effets d'un objet (6 stats v2)
     public static function appliquerEffets(int $idObjet, int $idPartie): void {
-        require_once __DIR__ . '/Stats.php';
-
         $objet = self::getById($idObjet);
         if (!$objet) return;
 
-        // On applique chaque effet seulement s'il est non nul
-        if ((int)$objet['effet_courage'] !== 0) {
-            Stats::modifier($idPartie, 'courage', (int)$objet['effet_courage']);
-        }
-        if ((int)$objet['effet_technique'] !== 0) {
-            Stats::modifier($idPartie, 'technique', (int)$objet['effet_technique']);
-        }
-        if ((int)$objet['effet_stamina'] !== 0) {
-            Stats::modifier($idPartie, 'stamina', (int)$objet['effet_stamina']);
+        $effets = [
+            'courage'    => (int)($objet['effet_courage']    ?? 0),
+            'technique'  => (int)($objet['effet_technique']  ?? 0),
+            'stamina'    => (int)($objet['effet_stamina']     ?? 0),
+            'vitesse'    => (int)($objet['effet_vitesse']     ?? 0),
+            'chance'     => (int)($objet['effet_chance']      ?? 0),
+            'leadership' => (int)($objet['effet_leadership']  ?? 0),
+        ];
+
+        foreach ($effets as $stat => $delta) {
+            if ($delta !== 0) {
+                Stats::modifier($idPartie, $stat, $delta);
+            }
         }
     }
 }

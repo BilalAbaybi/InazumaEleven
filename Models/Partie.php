@@ -1,21 +1,26 @@
 <?php
+// models/Partie.php
 
-require_once '../InazumaEleven/Config/database.php';
+require_once('Config/database.php');
 
 class Partie {
 
-    // Crée une nouvelle partie et retourne son id
-    public static function creer(string $pseudo): int {
+    public static function creer(string $pseudo, int $idJoueur): int {
         $pdo  = getDB();
-        $stmt = $pdo->prepare(
-            'INSERT INTO partie (pseudo, page_actuelle, date_debut)
-             VALUES (:pseudo, 1, NOW())'
-        );
-        $stmt->execute([':pseudo' => $pseudo]);
-        return (int)$pdo->lastInsertId();
+        $pdo->prepare(
+            'INSERT INTO partie (id_joueur, pseudo, page_actuelle, date_debut, nb_pages_vues)
+             VALUES (:joueur, :pseudo, 1, NOW(), 1)'
+        )->execute([':joueur' => $idJoueur, ':pseudo' => $pseudo]);
+
+        $idPartie = (int)$pdo->lastInsertId();
+
+        // Initialiser les affinités avec tous les personnages
+        require_once __DIR__ . '/../Models/Affinite.php';
+        Affinite::initialiser($idPartie);
+
+        return $idPartie;
     }
 
-    // Récupère une partie par son id
     public static function getById(int $id): array|false {
         $pdo  = getDB();
         $stmt = $pdo->prepare('SELECT * FROM partie WHERE id_partie = :id');
@@ -23,27 +28,24 @@ class Partie {
         return $stmt->fetch();
     }
 
-    // Met à jour la page actuelle du joueur
-    public static function majPage(int $idPartie, int $idPage): void {
-        $pdo  = getDB();
-        $stmt = $pdo->prepare(
-            'UPDATE partie
-             SET page_actuelle  = :page,
-                 nb_pages_vues  = nb_pages_vues + 1
-             WHERE id_partie = :id'
-        );
-        $stmt->execute([':page' => $idPage, ':id' => $idPartie]);
+    public static function majPage(int $idPartie, int $idPage, bool $estFin = false): void {
+        $pdo = getDB();
+        if ($estFin) {
+            $pdo->prepare('UPDATE partie SET page_actuelle = :page WHERE id_partie = :id')
+                ->execute([':page' => $idPage, ':id' => $idPartie]);
+        } else {
+            $pdo->prepare(
+                'UPDATE partie
+                 SET page_actuelle = :page, nb_pages_vues = nb_pages_vues + 1
+                 WHERE id_partie = :id'
+            )->execute([':page' => $idPage, ':id' => $idPartie]);
+        }
     }
 
-    // Termine une partie avec le type de fin obtenu
     public static function terminer(int $idPartie, string $typeFin): void {
         $pdo  = getDB();
-        $stmt = $pdo->prepare(
-            'UPDATE partie
-             SET terminee     = TRUE,
-                 fin_obtenue  = :fin
-             WHERE id_partie = :id'
-        );
-        $stmt->execute([':fin' => $typeFin, ':id' => $idPartie]);
+        $pdo->prepare(
+            'UPDATE partie SET terminee = TRUE, fin_obtenue = :fin WHERE id_partie = :id'
+        )->execute([':fin' => $typeFin, ':id' => $idPartie]);
     }
 }
