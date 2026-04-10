@@ -2,11 +2,11 @@
 
 //Connexion a la BDD MariaDB via PDO
 
-define('Hostname', '192.168.56.10' );
-define('Port', '3306' );
-define('Database', 'football_frontier2' );
-define('Username', 'Admin' );
-define('Password', 'Bilal.aba@28000' );
+define('Hostname', '' );
+define('Port', '' );
+define('Database', '' );
+define('Username', '' );
+define('Password', '' );
 
 function getDB(): PDO {
     static $pdo = null;
